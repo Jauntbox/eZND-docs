@@ -1,0 +1,243 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tutorial &mdash; eZND 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="eZND 1.0 documentation" href="index.html" />
+    <link rel="prev" title="Introduction to eZND" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction to eZND"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">eZND 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>eZND uses a Fortran namelist to specify inputs, just like the inlist file used in MESA. It is called <strong>inlist_znd</strong>, and lives in the same directory as the source code. Unless you&#8217;re doing some heavy-duty modifications (eg. changing the post-shock evolution equations) then you shouldn&#8217;t need to ever recompile the code.</p>
+<p>All of the variables in the inlist have default values, listed in the inlist_controls section along with a detailed description of their function. Thus, if you provide an empty file for the inlist, then eZND will still run - computing its default calculation, finding the ZND structure of a CJ detonation in pure helium at <span class="math">\(\rho_0 = 5\times 10^5\ {\rm g/cm^3}\)</span> and <span class="math">\(T_0 = 10^8\)</span> K.</p>
+<p>This tutorial goes over the basic setup and output for some of the most common use cases.</p>
+<div class="section" id="setting-your-mesa-path">
+<h2>Setting your MESA path<a class="headerlink" href="#setting-your-mesa-path" title="Permalink to this headline">¶</a></h2>
+<p>eZND uses MESA&#8217;s microphysics modules, so needs to know where your local MESA installation lives. By default, it will look in your $MESA_DIR environment variable but if you have multiple MESA installations, you may want to tell eZND to use a different version. In that case you can specify the (full) path to the MESA installation with the inlist command,</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">my_mesa_dir</span> <span class="o">=</span> <span class="s1">&#39;/Users/Kevin/mesa_5271&#39;</span>       <span class="c">!MESA installation directory to use</span>
+</pre></div>
+</div>
+<p>where the full path is contained in quotes.</p>
+</div>
+<div class="section" id="setting-a-nuclear-reaction-network">
+<h2>Setting a nuclear reaction network<a class="headerlink" href="#setting-a-nuclear-reaction-network" title="Permalink to this headline">¶</a></h2>
+<p>The reaction networks are set up in MESA format, using data from NACRE, Reaclib, and other sources (see the MESA instrument papers for more detail). To specify a reaction network file, use</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">net_file</span> <span class="o">=</span> <span class="s1">&#39;88_iso.net&#39;</span>      <span class="c">!Nuclear reaction network to use</span>
+</pre></div>
+</div>
+<p>where the network you want is in quotes. This can be a relative or absolute path to the network file. MESA&#8217;s default networks are stored in the installations <strong>data/net_data/nets</strong> folder.</p>
+</div>
+<div class="section" id="setting-the-initial-conditions">
+<h2>Setting the initial conditions<a class="headerlink" href="#setting-the-initial-conditions" title="Permalink to this headline">¶</a></h2>
+<p>The initial conditions for eZND consist of thermodynamics (<span class="math">\(\rho_0\)</span> and <span class="math">\(T_0\)</span>) and composition. The thermodynamic conditions can either be set directly, or if the calculation is to be mapped to a white dwarf surface are set implicitly by setting the white dwarf core and envelope masses.</p>
+<p>If the thermodynamic conditions are specified directly, the following commands are used</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">rho_0</span> <span class="o">=</span> <span class="mi">5</span><span class="nv">d5</span>  <span class="c">!Initial density (g/cm^3)</span>
+<span class="nv">T_0</span> <span class="o">=</span> <span class="mi">1</span><span class="nv">d8</span>    <span class="c">!Initial temperature (K)</span>
+</pre></div>
+</div>
+<p>If the thermodynamic conditions are set implicitly from a white dwarf core/envelope mass then these are set using</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">m_c</span> <span class="o">=</span> <span class="mf">1.0</span>            <span class="c">!white dwarf core mass (solar masses)</span>
+<span class="nv">m_env</span> <span class="o">=</span> <span class="mf">0.05</span>         <span class="c">!white dwarf envelope mass (solar masses) - need to actually implement this!</span>
+</pre></div>
+</div>
+<p>The mass fractions of the initial isotopes is specified in a few steps. First, you set the number of different isotopes in the initial composition with</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">num_isos_for_Xinit</span> <span class="o">=</span> <span class="mi">3</span>       <span class="c">!Number of isotopes in initial composition</span>
+</pre></div>
+</div>
+<p>where this integer can be anything between 1 and the number of isotope species in the reaction network. Each isotope is then identified and assigned a mass fraction with the following two lines (per isotope in the initial mixture)</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">names_of_isos_for_Xinit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;he4&#39;</span>   <span class="c">!Isotope name</span>
+<span class="nv">values_for_Xinit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.8</span>            <span class="c">!Isotope mass fraction</span>
+</pre></div>
+</div>
+<p>The names of the isotopes can be found in the <strong>isotopes.data</strong> file located in MESA&#8217;s <strong>data/chem_data</strong> folder.</p>
+</div>
+<div class="section" id="selecting-run-mode">
+<h2>Selecting run mode<a class="headerlink" href="#selecting-run-mode" title="Permalink to this headline">¶</a></h2>
+<p>eZND can be run in a variety of modes, from calculating CJ conditions as a function of initial density to calculating generalized CJ velocities for a variety of white dwarf envelope masses. From here, the inlist controls vary enough that we will go through each runtime mode separately.</p>
+<div class="section" id="finding-naive-cj-velocities-as-a-function-of-initial-density">
+<span id="subsubsec-do-cjstate-only"></span><h3>Finding naive CJ velocities as a function of initial density<a class="headerlink" href="#finding-naive-cj-velocities-as-a-function-of-initial-density" title="Permalink to this headline">¶</a></h3>
+<p>This mode sweeps through a variety of initial densities, calculating the CJ conditions for each. It does not do a post-shock integration so does not calculate the post-shock structure for any of the detonations. Currently, an NSE solver is not implemented so the CJ state is calculated from an assumed final burning state. If the final state is not known, then the CJ state can be iteratively solved for using post-shock integration, see <a class="reference internal" href="#subsubsec-do-rho-sweep"><em>Finding generalized CJ velocities as a function of initial density</em></a>.</p>
+<p>In this case expansive effects cannot be included (hence the &#8216;naive&#8217;), so any specification of blowout and curvature source terms will be ignored. The controls for sweeping through densities are described in the section <a class="reference internal" href="#subsec-rho-sweep"><em>Sweeping through initial densities</em></a>.</p>
+</div>
+<div class="section" id="finding-generalized-cj-velocities-as-a-function-of-initial-density">
+<span id="subsubsec-do-rho-sweep"></span><h3>Finding generalized CJ velocities as a function of initial density<a class="headerlink" href="#finding-generalized-cj-velocities-as-a-function-of-initial-density" title="Permalink to this headline">¶</a></h3>
+<p>This mode is similar to <a class="reference internal" href="#subsubsec-do-cjstate-only"><em>Finding naive CJ velocities as a function of initial density</em></a>, sweeping through a variety of initial densities, except here the post-shock integrals are performed so the CJ (or generalized CJ) solution can be found iteratively.</p>
+</div>
+</div>
+<div class="section" id="sweeping-through-initial-densities">
+<span id="subsec-rho-sweep"></span><h2>Sweeping through initial densities<a class="headerlink" href="#sweeping-through-initial-densities" title="Permalink to this headline">¶</a></h2>
+<p>Several run modes involve sweeping though an initial density, <span class="math">\(\rho_0\)</span>, directly:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#subsubsec-do-cjstate-only"><em>Finding naive CJ velocities as a function of initial density</em></a></li>
+<li><a class="reference internal" href="#subsubsec-do-rho-sweep"><em>Finding generalized CJ velocities as a function of initial density</em></a></li>
+</ul>
+<p>To set the densities to use,</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">rho_sweep_log_min</span> <span class="o">=</span> <span class="mf">5.0</span>              <span class="c">!Lowest log-density to use</span>
+<span class="nv">rho_sweep_log_max</span> <span class="o">=</span> <span class="mf">7.0</span>              <span class="c">!Highest log-density to use</span>
+</pre></div>
+</div>
+<p>while the number of steps to take between the maximum and minimum values (inclusive) is set with</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">rho_sweep_num_steps</span> <span class="o">=</span> <span class="mi">50</span>             <span class="c">!Number of steps in density to take</span>
+</pre></div>
+</div>
+<p>The number of steps must be at least 2 since the min and max values must be calculated. The code will take equally spaced steps in log-density specified by the formula:</p>
+<p><span class="math">\(\rho_0 = 10^{({\rm rho\_sweep\_log\_min} + ({\rm rho\_sweep\_log\_max}-{\rm rho\_sweep\_log\_min})*(i-1)/({\rm rho\_sweep\_num\_steps}-1))}\)</span></p>
+<p>where <em>i</em> is the integer index in the range 1..rho_sweep_num_steps.</p>
+<p>If expansive effects are enabled, then the thickness-scale height relation can be specified with</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">d_hs_scaling</span> <span class="o">=</span> <span class="mf">0.5</span>   <span class="c">!H = d_hs_scaling*H_scale</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="numerical-controls">
+<span id="subsec-numerics"></span><h2>Numerical controls<a class="headerlink" href="#numerical-controls" title="Permalink to this headline">¶</a></h2>
+<p>Various controls for the numerical solvers are available. Let&#8217;s start with the generalized ZND equation integrator.</p>
+<div class="section" id="znd-integration">
+<h3>ZND Integration<a class="headerlink" href="#znd-integration" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>The number of output steps (spaced equally in log-distance behind the shock front) is given by</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">num_steps</span> <span class="o">=</span> <span class="mi">1000</span>  <span class="c">!For typical production runs - these are data output points, not integration steps</span>
+</pre></div>
+</div>
+<p>and the integration range (in cm) is specified by</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">burn_time</span> <span class="o">=</span> <span class="mi">1</span><span class="nv">d10</span>          <span class="c">!cm for ZND if doing a spatial integration, sec if integrating in time (not currently supported)</span>
+</pre></div>
+</div>
+<p>Each output step consists of a call to the stiff ODE integrator, isolve(). The number of steps that this routine can take internally can be set with</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">max_steps</span> <span class="o">=</span> <span class="mi">1000</span>          <span class="c">!Max number of internal integration steps per isolve() call</span>
+</pre></div>
+</div>
+<p>There are also a variety (7 as of MESA v5271) of implicit solvers used in the numerical integration. These are specified by integers, listed in MESA&#8217;s <strong>num/public/num_def.f</strong> file. The solver is specified with</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">which_solver</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c">!ros3pl_solver</span>
+</pre></div>
+</div>
+<p>Tolerances for accepting an internal step in the numerical integration (in between output points) are specified in absolute and relative terms. These are explained in MESA&#8217;s <strong>num/public/num_isolve.dek</strong> file, and set by</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">rtol_init</span> <span class="o">=</span> <span class="mi">1</span><span class="nv">d</span><span class="o">-</span><span class="mi">8</span>          <span class="c">!Relative tolerance for accepting integration step</span>
+<span class="nv">atol_init</span> <span class="o">=</span> <span class="mi">1</span><span class="nv">d</span><span class="o">-</span><span class="mi">8</span>          <span class="c">!Absolute tolerance for accepting integration step</span>
+</pre></div>
+</div>
+<p>Many of the implicit solvers can be sped up if the Jacobian can be evaluated analytically at the given point (rather than by finite differences). The switch that controls whether the analytic Jacobian is used is</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span class="nv">ijac</span> <span class="o">=</span> <span class="mi">0</span>                  <span class="c">!0:numeric, 1:analytic (Jacobian for ZND integrator)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="pathological-point-traversal">
+<h3>Pathological point traversal<a class="headerlink" href="#pathological-point-traversal" title="Permalink to this headline">¶</a></h3>
+<p>There are a few controls for how the pathological point is traversed. It is usually possible to automate jumping over the pathological point if the generalized CJ velocity is determined to a high enough accuracy (I typically use a relative tolerance of 1d-5, but your milage may very of course).</p>
+<p>Assuming you have determined the pathological point, you may</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tutorial</a><ul>
+<li><a class="reference internal" href="#setting-your-mesa-path">Setting your MESA path</a></li>
+<li><a class="reference internal" href="#setting-a-nuclear-reaction-network">Setting a nuclear reaction network</a></li>
+<li><a class="reference internal" href="#setting-the-initial-conditions">Setting the initial conditions</a></li>
+<li><a class="reference internal" href="#selecting-run-mode">Selecting run mode</a><ul>
+<li><a class="reference internal" href="#finding-naive-cj-velocities-as-a-function-of-initial-density">Finding naive CJ velocities as a function of initial density</a></li>
+<li><a class="reference internal" href="#finding-generalized-cj-velocities-as-a-function-of-initial-density">Finding generalized CJ velocities as a function of initial density</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sweeping-through-initial-densities">Sweeping through initial densities</a></li>
+<li><a class="reference internal" href="#numerical-controls">Numerical controls</a><ul>
+<li><a class="reference internal" href="#znd-integration">ZND Integration</a></li>
+<li><a class="reference internal" href="#pathological-point-traversal">Pathological point traversal</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Introduction to eZND</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction to eZND"
+             >previous</a> |</li>
+        <li><a href="index.html">eZND 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Kevin Moore.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
